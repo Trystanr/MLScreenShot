@@ -11,8 +11,19 @@ import Cocoa
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
 
+//    var statusItem: NSStatusItem?
 
-
+//    override func awakeFromNib() {
+//        super.awakeFromNib()
+//
+//        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+//        let itemImage = NSImage(named: "tick")
+//        itemImage?.isTemplate = true
+//        statusItem?.button?.image = itemImage
+//    }
+    
+    @IBOutlet weak var statusItemManager: StatusItemManager!
+    
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
     }
@@ -20,7 +31,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ aNotification: Notification) {
         // Insert code here to tear down your application
     }
-
 
 }
 

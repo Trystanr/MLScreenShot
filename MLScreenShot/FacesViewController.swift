@@ -1,8 +1,8 @@
 //
-//  ViewController.swift
+//  FacesViewController.swift
 //  MLScreenShot
 //
-//  Created by Trystan Rivers on 2020/10/06.
+//  Created by Trystan Rivers on 2020/11/03.
 //  Copyright © 2020 Trystan Rivers. All rights reserved.
 //
 
@@ -13,27 +13,71 @@ import CoreGraphics
 
 import PythonKit
 
-class ViewController: NSViewController {
+class View: NSView {
+  override var isFlipped: Bool { return true }
+}
 
-    @IBOutlet var imgScreenshotView: NSImageView!
-    @IBOutlet var lblFaceCount: NSTextField!
+class FacesViewController: NSViewController {
     
-    @IBOutlet var newImgView: NSView!
+    @IBOutlet var FaceView: NSView!
+    @IBOutlet var faceLabel: NSTextField!
+    @IBOutlet var faceButton: NSButton!
+    @IBOutlet var faceLoading: NSProgressIndicator!
+    @IBOutlet var faceCountLabel: NSTextField!
+    
+    var facesLoaded = false
+    
+    override func viewWillAppear() {
+        super.viewWillAppear()
+        print("loaded")
+        
+        if facesLoaded == true {
+            var windowFrame:NSRect = self.view.window!.frame
+            windowFrame.size.width = 450.0
+            windowFrame.origin.x -= 170.0
+            
+            self.view.window!.setFrame(windowFrame, display: true, animate: true)
+        }
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
+    }
+    
+    @IBAction func faceScreenshotClick(_ sender: Any) {
+        faceButton.isHidden = true
+        faceLoading.isHidden  = false
+        faceLoading.startAnimation(self)
         
-        print(Python.version)
-    }
+        facesLoaded = true
+        DispatchQueue.main.async {
+            self.TakeScreensShot(folderName: "Capture-") {
+                self.faceLoading.stopAnimation(self)
+                self.faceLoading.isHidden = true
+                self.faceCountLabel.isHidden = false
+                
+                NSAnimationContext.runAnimationGroup({
+                    (context: NSAnimationContext!) -> Void in
+                        context.duration = 0.33
+                        context.allowsImplicitAnimation = true
 
-    override var representedObject: Any? {
-        didSet {
-        // Update the view, if already loaded.
+                        var windowFrame:NSRect = self.view.window!.frame
+                        windowFrame.size.width = 450.0
+                        windowFrame.origin.x -= 170.0
+                        
+                        self.view.window!.setFrame(windowFrame, display: true, animate: true)
+                    },
+                    completionHandler:
+                    {
+                        () -> Void in
+                        
+                        print("animation complete")
+                    }
+                )
+
+            }
         }
-    }
-
-    @IBAction func btnScreenshotPressed(_ sender: Any) {
-        TakeScreensShot(folderName: "Capture-")
+        
     }
     
     func runPythonCode(filepath: String) -> PythonObject {
@@ -43,7 +87,7 @@ class ViewController: NSViewController {
        return example.get_name(filepath)[0][0]
     }
     
-    func TakeScreensShot(folderName: String){
+    func TakeScreensShot(folderName: String, finished: () -> Void) {
         var displayCount: UInt32 = 0;
         var result = CGGetActiveDisplayList(0, nil, &displayCount)
         if (result != CGError.success) {
@@ -71,41 +115,25 @@ class ViewController: NSViewController {
                 print(fileUrl)
                 
                 try jpegData.write(to: fileUrl, options: .atomic)
-                
-                imgScreenshotView.image = NSImage(byReferencing: fileUrl)
-                
+
                 let nsImg = NSImage(byReferencing: fileUrl)
                 
                 guard let cgImg = nsImg.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
                     fatalError("can't convert image")
                 }
                 
-                let sourceImage = NSImage(byReferencing: fileUrl)
-                var resultImage = sourceImage
-                
-                
                 let detectFaceRequest = VNDetectFaceRectanglesRequest { (request, error) in
 
                   if let results = request.results as? [VNFaceObservation] {
                     print(results.count)
+                    self.faceCountLabel.stringValue = String(results.count)
                     
-                    self.lblFaceCount.stringValue = String(results.count)
-                    
-                    let frame = self.imgScreenshotView.frame
-                    
-                    let line = Line(frame: frame)
-                    line.translatesAutoresizingMaskIntoConstraints = true
-                    line.autoresizingMask = [.maxXMargin, .maxYMargin, .minXMargin, .minYMargin, .width, .height]
+                    let subviewFrame = CGRect(origin: .zero, size: CGSize(width: 910, height: 100))
+
+                    let documentView = View(frame: subviewFrame)
+                    documentView.wantsLayer = true
                     
                     for (i, faceObservation) in results.enumerated() {
-                        let boundingBox = faceObservation.boundingBox
-                        
-                        let size = CGSize(width: boundingBox.width * self.imgScreenshotView.bounds.width,
-                                          height: boundingBox.height * self.imgScreenshotView.bounds.height)
-                        let origin = CGPoint(x: boundingBox.minX * self.imgScreenshotView.bounds.width,
-                                             y: (faceObservation.boundingBox.minY) * self.imgScreenshotView.bounds.height)
-                        
-                        line.addFace(n: CGRect(origin: origin, size: size))
                         
                         cgImg.faceCropSingle(face: faceObservation ,completion: { [weak self] result in
                             switch result {
@@ -117,16 +145,10 @@ class ViewController: NSViewController {
                                     
                                     v.layer?.backgroundColor = NSColor.green.cgColor
                                     
-                                    self?.newImgView.addSubview(v)
-                                    
-                                    let subView = NSImageView(frame: fr)
-                                    subView.image = NSImage(cgImage: cgImage, size: NSSize(width: 224, height: 224))
-                                    self?.newImgView.addSubview(subView)
-                                    
                                     let fileUrlFace = URL(fileURLWithPath: folderName + "\(unixTimestamp)" + "_" + "\(i)" + "_face.jpg", isDirectory: true)
                                     let bitmapRepFace = NSBitmapImageRep(cgImage: cgImage)
                                     let jpegDataFace = bitmapRepFace.representation(using: NSBitmapImageRep.FileType.jpeg, properties: [:])!
-
+                                    
                                     do {
                                         print("\n")
                                         print("Face Detection\n")
@@ -140,24 +162,45 @@ class ViewController: NSViewController {
                                         try jpegDataFace.write(to: fileUrlFace, options: .atomic)
                                         
                                         let faceName = self?.runPythonCode(filepath: String(mySubstring))
+//                                        let faceName = "Helollllo"
                                         
                                         let faceNameUnwrapped = String(faceName!)!
+//                                        let faceNameUnwrapped = faceName
                                         let faceStart = faceNameUnwrapped.index(faceNameUnwrapped.startIndex, offsetBy: 3)
                                         let faceEnd = faceNameUnwrapped.index(faceNameUnwrapped.endIndex, offsetBy: -1)
                                         let faceRange = faceStart..<faceEnd
 
                                         let faceNameCapped = faceNameUnwrapped[faceRange]
                                         
+                                        let fr = CGRect(origin: CGPoint(x: (i*80)+0, y: 20), size: CGSize(width: 70, height: 70))
+                                        let subView = NSImageView(frame: fr)
+                                        subView.image = NSImage(cgImage: cgImage, size: NSSize(width: 224, height: 224))
+                                        subView.wantsLayer = true
+                                        subView.layer?.cornerRadius = 4.0
+                                        subView.layer?.masksToBounds = true
+                                        
+                                        let gradient = CAGradientLayer()
+                                        gradient.colors = [
+                                          NSColor.blue.withAlphaComponent(0.2).cgColor,
+                                          NSColor.blue.withAlphaComponent(0.4).cgColor
+                                        ]
+                                        
                                         let label = NSTextField()
-                                        label.frame = CGRect(origin: CGPoint.init(x: i * 110, y: 0), size: CGSize(width: 100, height: 44))
+                                        gradient.frame = CGRect(origin: CGPoint(x: (i*80)+0, y: 20), size: CGSize(width: 70, height: 70))
+                                        label.frame = CGRect(origin: CGPoint.init(x: (i*80)+0, y: 75), size: CGSize(width: 70, height: 10))
+                                        
                                         label.stringValue = String(faceNameCapped)
-                                        label.backgroundColor = .white
+                                        label.backgroundColor = NSColor.white.withAlphaComponent(0.8)
                                         label.textColor = .black
                                         label.isBezeled = false
                                         label.isEditable = false
-                                        label.sizeToFit()
+                                        label.font = NSFont(name: label.font!.fontName, size: 8.0)
+                                        label.alignment = .center
                                         
-                                        self?.newImgView.addSubview(label)
+//                                        documentView.layer?.addSublayer(gradient)
+                                        documentView.addSubview(subView)
+                                        documentView.addSubview(label)
+                                        
                                     }
                                         catch {print("error: \(error)")}
                                 }
@@ -167,13 +210,22 @@ class ViewController: NSViewController {
                                 print("something went very wrong")
                             }
                         })
-                        
-
                     }
                     
+                    let scrollViewFrame = CGRect(origin:  CGPoint(x: 111, y:0),
+                                       size: CGSize(width: 339, height: 110))
+                    let scrollView = NSScrollView(frame: scrollViewFrame)
+                    scrollView.backgroundColor = NSColor.white.withAlphaComponent(0.1)
+                    scrollView.drawsBackground = false
+                    scrollView.documentView = documentView
+                    scrollView.contentView.scroll(to: .zero)
                     
-                    self.view.addSubview(line)
-
+                    self.FaceView.wantsLayer = true
+                    self.FaceView.addSubview(scrollView)
+                    
+                    
+                    
+                    
                   }
                 }
                 let vnImage = VNImageRequestHandler(cgImage: cgImg, options: [:])
@@ -181,6 +233,8 @@ class ViewController: NSViewController {
             }
             catch {print("error: \(error)")}
         }
+        
+        finished()
     }
 
     func CreateTimeStamp() -> Int32
@@ -189,26 +243,19 @@ class ViewController: NSViewController {
     }
     
     func detectedFace(request: VNRequest, error: Error?) {
-      // 1
       guard
         let results = request.results as? [VNFaceObservation],
         let result = results.first
         else {
-          // 2
-          // No face  detected
           return
       }
-        
-      // 3
       let box = result.boundingBox
       print(box)
     }
-    
-    
 
     
-
-
     
+    @IBAction func quit(_ sender: Any) {
+        NSApplication.shared.terminate(self)
+    }
 }
-
