@@ -70,6 +70,15 @@ The brief for this project was to conceptualise and develop any TensorFlow-based
 1. Run the app
 
 
+#### Python Dependancies 
+`pip install --user install tensorflow==1.3.0. `
+
+`pip install --user install Keras==2.2.4.`
+
+`pip install --user install mtcnn`
+
+`pip install --user install matplotlib`
+
 ### User Guide
 #### Using the app
 
