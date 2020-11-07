@@ -67,6 +67,7 @@ The brief for this project was to conceptualise and develop any TensorFlow-based
 1. Open the folder using XCode.
 1. Ensure PythonKit is added to the project.
 1. NB! Place the `face_plot_swift.py` file in a folder called `ML-Python` on your desktop.
+1. NB! Change the line in `ViewController.swift` line `41` from `/Users/trystan/Desktop/ML-Python/` to where you placed the `ML-Python` folder.
 1. Run the app
 
 
