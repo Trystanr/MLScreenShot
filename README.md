@@ -42,13 +42,12 @@ The brief for this project was to conceptualise and develop any TensorFlow-based
 ### Built With
 
 * [Swift](https://developer.apple.com/swift/)
-* [XCode](https://tornadofx.io/)
-* [XCode](https://tornadofx.io/)
-* [Python](https://tornadofx.io/)
-* [PythonKit](https://tornadofx.io/)
-* [TensorFlow](https://tornadofx.io/)
-* [Keras](https://tornadofx.io/)
-* [VGGFace](https://tornadofx.io/)
+* [XCode](https://developer.apple.com/xcode/)
+* [Python](https://www.python.org/)
+* [PythonKit](https://github.com/pvieito/PythonKit)
+* [TensorFlow](https://www.tensorflow.org/)
+* [Keras](https://keras.io/)
+* [VGGFace](https://github.com/rcmalli/keras-vggface/)
 
 
 ### App Features:
