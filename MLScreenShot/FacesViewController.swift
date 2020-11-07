@@ -25,16 +25,35 @@ class FacesViewController: NSViewController {
     @IBOutlet var faceLoading: NSProgressIndicator!
     @IBOutlet var faceCountLabel: NSTextField!
     
+    typealias CompletionHandler = (_ success:Array<String>) -> Void
+    
     var facesLoaded = false
+    var globalFaceCount = 0
+    
+    var classStudents = [
+        "Britney_Spears",
+        "Brad_Pitt",
+        "Sharon_Stone",
+        "Dwayne_Johnson",
+        "Whoopi_Goldberg",
+    ]
     
     override func viewWillAppear() {
         super.viewWillAppear()
-        print("loaded")
         
         if facesLoaded == true {
             var windowFrame:NSRect = self.view.window!.frame
-            windowFrame.size.width = 450.0
-            windowFrame.origin.x -= 170.0
+            if ( globalFaceCount == 1) {
+                windowFrame.size.width = 220.0
+                windowFrame.origin.x -= 40.0
+            } else if ( globalFaceCount == 2) {
+                windowFrame.size.width = 300.0
+            } else if ( globalFaceCount == 3) {
+                windowFrame.size.width = 380.0
+            } else {
+                windowFrame.size.width = 460.0
+                windowFrame.origin.x -= 170.0
+            }
             
             self.view.window!.setFrame(windowFrame, display: true, animate: true)
         }
@@ -51,10 +70,21 @@ class FacesViewController: NSViewController {
         
         facesLoaded = true
         DispatchQueue.main.async {
-            self.TakeScreensShot(folderName: "Capture-") {
+            self.TakeScreensShot(folderName: "Capture-", completionHandler: { (presentStudents) -> Void in
                 self.faceLoading.stopAnimation(self)
                 self.faceLoading.isHidden = true
                 self.faceCountLabel.isHidden = false
+                
+                self.globalFaceCount = presentStudents.count
+                if (presentStudents.count != self.classStudents.count) {
+                    let set2 = Set(presentStudents)
+                    print("absent students")
+                    print(self.classStudents.filter {!set2.contains($0)} )
+                    self.faceCountLabel.stringValue = String(presentStudents.count) + "/" + String(self.classStudents.count)
+                }
+                
+                print("present students")
+                print(presentStudents)
                 
                 NSAnimationContext.runAnimationGroup({
                     (context: NSAnimationContext!) -> Void in
@@ -62,20 +92,29 @@ class FacesViewController: NSViewController {
                         context.allowsImplicitAnimation = true
 
                         var windowFrame:NSRect = self.view.window!.frame
-                        windowFrame.size.width = 450.0
-                        windowFrame.origin.x -= 170.0
+//                        windowFrame.size.width = 460.0
+                        if ( presentStudents.count == 1) {
+                            windowFrame.size.width = 220.0
+                            windowFrame.origin.x -= 40.0
+                        } else if ( presentStudents.count == 2) {
+                            windowFrame.size.width = 300.0
+                        } else if ( presentStudents.count == 3) {
+                            windowFrame.size.width = 380.0
+                        } else {
+                            windowFrame.size.width = 460.0
+                            windowFrame.origin.x -= 170.0
+                        }
+                        
                         
                         self.view.window!.setFrame(windowFrame, display: true, animate: true)
                     },
                     completionHandler:
                     {
                         () -> Void in
-                        
-                        print("animation complete")
                     }
                 )
 
-            }
+            })
         }
         
     }
@@ -87,7 +126,7 @@ class FacesViewController: NSViewController {
        return example.get_name(filepath)[0][0]
     }
     
-    func TakeScreensShot(folderName: String, finished: () -> Void) {
+    func TakeScreensShot(folderName: String, completionHandler: CompletionHandler) {
         var displayCount: UInt32 = 0;
         var result = CGGetActiveDisplayList(0, nil, &displayCount)
         if (result != CGError.success) {
@@ -102,7 +141,11 @@ class FacesViewController: NSViewController {
             print("error: \(result)")
             return
         }
-           
+        
+        var presentStudents = [String]()
+        
+        
+        
         for i in 1...displayCount {
             let unixTimestamp = CreateTimeStamp()
             let fileUrl = URL(fileURLWithPath: folderName + "\(unixTimestamp)" + "_" + "\(i)" + ".jpg", isDirectory: true)
@@ -126,6 +169,8 @@ class FacesViewController: NSViewController {
 
                   if let results = request.results as? [VNFaceObservation] {
                     print(results.count)
+                    
+                    var facesCount = results.count
                     self.faceCountLabel.stringValue = String(results.count)
                     
                     let subviewFrame = CGRect(origin: .zero, size: CGSize(width: 910, height: 100))
@@ -138,7 +183,7 @@ class FacesViewController: NSViewController {
                         cgImg.faceCropSingle(face: faceObservation ,completion: { [weak self] result in
                             switch result {
                             case .success(let cgImage):
-                                DispatchQueue.main.async {
+//                                DispatchQueue.main.async {
                                     let fr: NSRect = NSMakeRect(CGFloat(i * 110), 0, 100, 100)
                                     let v: NSView = NSView(frame: fr)
                                     v.wantsLayer = true
@@ -151,7 +196,7 @@ class FacesViewController: NSViewController {
                                     
                                     do {
                                         print("\n")
-                                        print("Face Detection\n")
+                                        print("Face Detection")
                                         
                                         let start = fileUrlFace.absoluteString.index(fileUrlFace.absoluteString.startIndex, offsetBy: 7)
                                         let end = fileUrlFace.absoluteString.index(fileUrlFace.absoluteString.endIndex, offsetBy: -1)
@@ -161,11 +206,12 @@ class FacesViewController: NSViewController {
                                     
                                         try jpegDataFace.write(to: fileUrlFace, options: .atomic)
                                         
-                                        let faceName = self?.runPythonCode(filepath: String(mySubstring))
-//                                        let faceName = "Helollllo"
+//                                        let faceName = self?.runPythonCode(filepath: String(mySubstring))
+//                                        let faceNameUnwrapped = String(faceName!)!
                                         
-                                        let faceNameUnwrapped = String(faceName!)!
-//                                        let faceNameUnwrapped = faceName
+                                        let faceName = "111Name Surname1"
+                                        let faceNameUnwrapped = faceName
+                                        
                                         let faceStart = faceNameUnwrapped.index(faceNameUnwrapped.startIndex, offsetBy: 3)
                                         let faceEnd = faceNameUnwrapped.index(faceNameUnwrapped.endIndex, offsetBy: -1)
                                         let faceRange = faceStart..<faceEnd
@@ -190,6 +236,9 @@ class FacesViewController: NSViewController {
                                         label.frame = CGRect(origin: CGPoint.init(x: (i*80)+0, y: 75), size: CGSize(width: 70, height: 10))
                                         
                                         label.stringValue = String(faceNameCapped)
+                                        print(faceNameCapped)
+                                        presentStudents.append(String(faceNameCapped))
+                                        
                                         label.backgroundColor = NSColor.white.withAlphaComponent(0.8)
                                         label.textColor = .black
                                         label.isBezeled = false
@@ -203,7 +252,7 @@ class FacesViewController: NSViewController {
                                         
                                     }
                                         catch {print("error: \(error)")}
-                                }
+//                                }
                             case .notFound, .failure( _):
                                 print("error")
                             default:
@@ -223,9 +272,6 @@ class FacesViewController: NSViewController {
                     self.FaceView.wantsLayer = true
                     self.FaceView.addSubview(scrollView)
                     
-                    
-                    
-                    
                   }
                 }
                 let vnImage = VNImageRequestHandler(cgImage: cgImg, options: [:])
@@ -234,7 +280,7 @@ class FacesViewController: NSViewController {
             catch {print("error: \(error)")}
         }
         
-        finished()
+        completionHandler(presentStudents)
     }
 
     func CreateTimeStamp() -> Int32
