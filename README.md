@@ -8,7 +8,7 @@
    
   <p align="center">
     <a href="https://github.com/Trystanr/MLScreenShot" align="center">
-        <img src="images/Screenshot.png" alt="Logo" width="600">
+        <img src="screenshot.png" alt="Logo" width="600">
       </a>
   </p>
   
